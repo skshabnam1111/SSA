@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 from google import genai
 
@@ -38,11 +39,24 @@ if st.button("Generate Summary"):
             
             prompt = f"Summarize the following text in {summary_style}:\n\n{text_to_summarize}"
             
+            response = None
+            max_retries = 3
+            
             with st.spinner("Generating summary..."):
-                response = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=prompt,
-                )
+                for attempt in range(max_retries):
+                    try:
+                        # Updated to a stable, current model name
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=prompt,
+                        )
+                        break
+                    except Exception as err:
+                        # If it's a 503 error and we have retries left, wait and try again
+                        if "503" in str(err) and attempt < max_retries - 1:
+                            time.sleep(2)
+                        else:
+                            raise err
                 
             st.subheader("Summary Result")
             st.write(response.text)
